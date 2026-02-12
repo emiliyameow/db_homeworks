@@ -1,0 +1,24 @@
+services:
+  db:
+    image: postgres:16
+    container_name: my_postgres
+    ports:
+      - "5438:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 2004
+    
+  flyway:
+    image: flyway/flyway:latest
+    container_name: flyway
+    depends_on:
+      - db
+    volumes:
+      - ./migrations:/flyway/sql
+    command: >
+      -url=jdbc:postgresql://db:5432/postgres
+      -user=postgres
+      -password=2004
+      -locations=filesystem:/flyway/sql
+      migrate
+
