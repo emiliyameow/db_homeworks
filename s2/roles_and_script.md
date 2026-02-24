@@ -25,8 +25,7 @@
     
     GRANT DELETE ON ALL TABLES IN SCHEMA bakery_db TO deleter;
     
-    GRANT SELECT
-          ON ALL TABLES IN SCHEMA public TO readonly;
+    GRANT SELECT ON ALL TABLES IN SCHEMA bakery_db TO readonly;
 ```
 
 ### Генерация данных
@@ -66,7 +65,6 @@ public static async Task InsertWorkers(int count)
     await using var conn = new NpgsqlConnection(connectionString);
     await conn.OpenAsync();
 
-    // 1. Забираем все id пекарен, чтобы рандомно привязывать работников
     var bakeryIds = new List<int>();
     const string getBakeriesSql = "SELECT bakery_id FROM bakery_db.bakeries;";
     await using (var getCmd = new NpgsqlCommand(getBakeriesSql, conn))
@@ -101,21 +99,16 @@ public static async Task InsertWorkers(int count)
 
     for (int i = 0; i < count; i++)
     {
-        // Российский телефон: +7 9ХХ ХХХ-ХХ-ХХ
         var phone = GenerateRussianPhone(random);
         pPhone.Value = phone;
 
-        // Имя/фамилия из массивов
         pFirstName.Value  = firstNames[random.Next(firstNames.Length)];
         pSecondName.Value = lastNames[random.Next(lastNames.Length)];
 
-        // Дата рождения: допустим, возраст 18–60 лет
         pDob.Value = GenerateBirthDate(random, minAge: 18, maxAge: 60);
 
-        // Роль из массива roles
         pRole.Value = roles[random.Next(roles.Length)];
 
-        // bakery_id — случайная существующая пекарня
         pBakeryId.Value = bakeryIds[random.Next(bakeryIds.Count)];
 
         await cmd.ExecuteNonQueryAsync();
@@ -129,13 +122,12 @@ public static async Task InsertWorkers(int count)
 
 static string GenerateRussianPhone(Random random)
 {
-    // 79XXXXXXXXX
     int secondDigit = random.Next(0, 10);
     int thirdDigit  = random.Next(0, 10);
 
-    int block1 = random.Next(100, 1000); // XXX
-    int block2 = random.Next(10, 100);   // XX
-    int block3 = random.Next(10, 100);   // XX
+    int block1 = random.Next(100, 1000); 
+    int block2 = random.Next(10, 100);  
+    int block3 = random.Next(10, 100);
 
     return $"79{secondDigit}{thirdDigit} {block1:D3}{block2:D2}{block3:D2}";
 }
@@ -143,8 +135,8 @@ static string GenerateRussianPhone(Random random)
 static DateTime GenerateBirthDate(Random random, int minAge, int maxAge)
 {
     var today = DateTime.UtcNow.Date;
-    var maxDate = today.AddYears(-minAge); // самый молодой
-    var minDate = today.AddYears(-maxAge); // самый старый
+    var maxDate = today.AddYears(-minAge); 
+    var minDate = today.AddYears(-maxAge); 
 
     var range = (maxDate - minDate).Days;
     var offset = random.Next(range + 1);
@@ -270,7 +262,7 @@ public static async Task InsertBakeryGoods(int count)
 
     for (int i = 0; i < count; i++)
     {
-        // Случайный продукт из твоего списка
+        // Случайный продукт из списка
         var product = products[random.Next(products.Length)];
         
         // Уникальное имя: "Хлеб пшеничный #1", "#2"...
@@ -283,7 +275,7 @@ public static async Task InsertBakeryGoods(int count)
         var unitId = unitIds[random.Next(unitIds.Length)];
         pUnitId.Value = unitId;
 
-        // size в зависимости от unit_id (варьируем вокруг твоих примеров)
+        // size в зависимости от unit_id
         decimal size;
         switch (unitId)
         {

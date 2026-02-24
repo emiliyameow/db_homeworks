@@ -5,8 +5,8 @@ services:
     ports:
       - "5438:5432"
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 2004
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     
   flyway:
     image: flyway/flyway:latest
