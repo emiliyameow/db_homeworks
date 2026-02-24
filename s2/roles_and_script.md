@@ -219,7 +219,6 @@ public static async Task InsertBakeryGoods(int count)
 
     var random = new Random();
 
-    // Твои точные данные из примера: название → recipe_id
     var products = new[]
     {
         new { Name = "Хлеб пшеничный", RecipeId = 1 },
@@ -262,20 +261,16 @@ public static async Task InsertBakeryGoods(int count)
 
     for (int i = 0; i < count; i++)
     {
-        // Случайный продукт из списка
         var product = products[random.Next(products.Length)];
         
-        // Уникальное имя: "Хлеб пшеничный #1", "#2"...
         nameCounters[product.Name]++;
         pName.Value = $"{product.Name} #{nameCounters[product.Name]}";
         
-        pRecipeId.Value = product.RecipeId; // Фиксированный recipe_id для этого названия
+        pRecipeId.Value = product.RecipeId; 
 
-        // unit_id
         var unitId = unitIds[random.Next(unitIds.Length)];
         pUnitId.Value = unitId;
 
-        // size в зависимости от unit_id
         decimal size;
         switch (unitId)
         {
@@ -292,7 +287,6 @@ public static async Task InsertBakeryGoods(int count)
         }
         pSize.Value = size;
 
-        // price - варьируем вокруг реалистичных цен
         decimal price;
         if (unitId == 3) // штуки
             price = random.Next(25, 151); // 25-150 руб
