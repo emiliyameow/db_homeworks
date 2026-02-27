@@ -23,9 +23,7 @@
 -  Высчитывать калорийность определенной выпечки по ее рецепту и ингредиентам.
 
 ### Схема базы данных
-![Схема:](Bakery.drawio.png)
+![Схема:](s1/Bakery.drawio.png)
 
 ### Схема базы данных PgAdmin
-![Схема;](bakery_db_schema.pgerd.png)
-
-### [Запросы и создание](https://docs.google.com/document/d/17R0X_agDJ6w852HzB7mRC3EsHGInvWIH3SKPjENJI9c/edit?usp=sharing)
+![Схема;](s1/bakery_db_schema.pgerd.png)
