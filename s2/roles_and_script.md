@@ -30,7 +30,7 @@
 
 ### Генерация данных
 
-Программа на С#:
+Программа на С# генерирует данные в таблицы workers, bakeries и bakery_goods:
 ```csharp
 
 public static async Task InsertWorkers(int count)
