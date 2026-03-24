@@ -1,13 +1,6 @@
 ```sql
 CREATE DATABASE bakery_db_test;
 
--- Создадим функцию для просмотра текущего LSN
-CREATE OR REPLACE FUNCTION bakery_db.show_current_lsn()
-RETURNS TEXT AS $$
-BEGIN
-    RETURN 'Текущий LSN: ' || pg_current_wal_lsn()::TEXT;
-END;
-$$ LANGUAGE plpgsql;
 
 TRUNCATE bakery_db.bakeries CASCADE;
 
