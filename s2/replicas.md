@@ -135,3 +135,106 @@ while true; do
 done
 
 ![Скриншот](img/64.png")
+
+### Logical replication
+```
+docker stop postgresql-01 postgresql-02 postgresql-03
+
+
+docker rm postgresql-02 postgresql-03
+
+
+docker rm postgresql-01
+
+# Создаем мастер с wal_level logical
+
+docker run -d \
+  --name postgresql-01 \
+  --network pg-network \
+  -e POSTGRES_PASSWORD=secretpass \
+  -e POSTGRES_USER=postgres \
+  -p 54320:5432 \
+  postgres:16 \
+  -c 'wal_level=logical' \
+  -c 'max_wal_senders=10' \
+  -c 'max_replication_slots=10' \
+  -c 'listen_addresses=*'
+
+# контейнер logical_replica
+docker run -d \
+  --name logical_replica \
+  --network pg-network \
+  -e POSTGRES_PASSWORD=secretpass \
+  -e POSTGRES_USER=postgres \
+  -p 54323:5432 \
+  postgres:16
+
+```
+
+```sql
+-- Таблица с PRIMARY KEY
+CREATE TABLE users_pk (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Таблица БЕЗ PRIMARY KEY
+CREATE TABLE users_no_pk (
+    id SERIAL,
+    name TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Вставляем начальные данные
+INSERT INTO users_pk (name, email) VALUES 
+    ('Alice', 'alice@example.com'),
+    ('Bob', 'bob@example.com');
+
+INSERT INTO users_no_pk (name, email) VALUES 
+    ('Diana', 'diana@example.com'),
+    ('Eve', 'eve@example.com');
+```
+![Скриншот](img/65.png")
+
+docker exec -it logical_replica psql -U postgres -c "CREATE DATABASE logical_test;"
+
+docker exec -it logical_replica psql -U postgres -d logical_test
+
+```
+CREATE TABLE users_pk (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE users_no_pk (
+    id SERIAL,
+    name TEXT NOT NULL,
+    email TEXT,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Проверяем, что таблицы пустые
+SELECT COUNT(*) FROM users_pk;   -- 0
+SELECT COUNT(*) FROM users_no_pk; -- 0
+\q
+```
+
+docker exec -it logical_replica psql -U postgres -d logical_test
+
+```
+CREATE SUBSCRIPTION my_subscription 
+CONNECTION 'host=postgresql-01 port=5432 dbname=logical_test user=postgres password=secretpass' 
+PUBLICATION my_publication;
+
+-- Проверяем статус
+SELECT * FROM pg_stat_subscription;
+\q
+```
+![Скриншот](img/66.png")
+![Скриншот](img/67.png")
+![Скриншот](img/68.png")
