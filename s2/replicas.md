@@ -238,3 +238,37 @@ SELECT * FROM pg_stat_subscription;
 ![Скриншот](img/66.png")
 ![Скриншот](img/67.png")
 ![Скриншот](img/68.png")
+
+Добавляем новый столбец на мастере
+```
+
+ALTER TABLE users_pk ADD COLUMN phone TEXT;
+
+UPDATE users_pk SET phone = '+123456789' WHERE name = 'Alice';
+UPDATE users_pk SET phone = '+987654321' WHERE name = 'Bob';
+
+\d users_pk
+SELECT * FROM users_pk;
+\q
+```
+![Скриншот](img/69.png")
+
+Проверяем на логической реплике
+
+docker exec -it logical_replica psql -U postgres -d logical_test
+
+```
+-- Структура таблицы (столбца phone НЕТ!)
+\d users_pk
+
+-- Данные реплицируются, но без нового столбца
+SELECT * FROM users_pk;
+
+```
+![Скриншот](img/70.png")
+
+### Проверка replication status
+![Скриншот](img/71.png")
+
+docker exec -it postgresql-01 psql -U postgres -c "SELECT slot_name, slot_type, database, active, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots;"
+![Скриншот](img/72.png")
