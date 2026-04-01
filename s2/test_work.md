@@ -159,9 +159,8 @@ DELETE FROM booking_slots
 WHERE id = 1;
 ```
 ![Скриншот](img/88.png)
-- У нас происходит блокировка - невозможно удалить потому что данные заблокированы транзакцией A
+- У нас происходит блокировка - невозможно удалить потому что данные заблокированы A
 
-После наблюдения результата завершите сессию `A`:
 
 ```sql
 ROLLBACK;
@@ -175,6 +174,7 @@ ROLLBACK;
 BEGIN;
 SELECT * FROM booking_slots WHERE id = 1 FOR NO KEY UPDATE;
 ```
+![Скриншот](img/90.png)
 
 В сессии `B` выполните:
 
@@ -183,6 +183,7 @@ UPDATE booking_slots
 SET reserved_count = reserved_count + 1
 WHERE id = 1;
 ```
+![Скриншот](img/91.png)
 
 После наблюдения результата завершите сессию `A`:
 
@@ -190,6 +191,10 @@ WHERE id = 1;
 ROLLBACK;
 ```
 
+Update - происхожит спокойно. 
+SELECT без FOR KEY SHARE/FOR NO KEY UPDATE - обычный select, который не меняет доступа к данным - когда нам надо просто обратиться и получить значения 
+
+FOR NO KEY UPDATE - когда нам не очень важно, чтобы данные не менялись во время процесса - например мы выводим деньги со счета какую то неважную сумму - и она может измениться
 Что нужно сделать:
 
 ```text
@@ -205,6 +210,11 @@ ROLLBACK;
 
 Сначала самостоятельно создайте секционированную таблицу `shipment_stats`:
 
+CREATE TABLE shipment_stats (
+    order_id SERIAL,
+    order_date DATE NOT NULL
+) PARTITION BY RANGE (region_code);
+
 ```text
 1. Таблица должна быть секционирована по LIST по полю region_code.
 2. Создайте секции:
@@ -218,12 +228,14 @@ ROLLBACK;
 Постройте планы для двух запросов:
 
 ```sql
+explain (analyse, buffers)
 SELECT region_code, shipped_on, packages
 FROM shipment_stats
 WHERE region_code = 'north';
 ```
 
 ```sql
+explain (analyse, buffers)
 SELECT region_code, shipped_on, packages
 FROM shipment_stats
 WHERE shipped_on >= DATE '2025-02-10'
