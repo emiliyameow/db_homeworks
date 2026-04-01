@@ -1,3 +1,6 @@
+# Секционирование, шардирование
+
+## Создаем секции
 ```
 -- 1. RANGE Partitioning (по датам) - для orders с датой заказа
 -- Сначала добавим колонку даты в orders
@@ -154,3 +157,265 @@ WHERE client_id = 15;
 ```
 
 ![Скриншот]("img/78.png")
+
+
+### Секционирование на репликах 
+
+```
+# Подключаемся к мастеру
+docker exec -it postgresql-01 psql -U postgres
+
+-- Создаем базу для теста
+CREATE DATABASE test_db;
+\c test_db
+
+-- Создаем секционированную таблицу
+CREATE TABLE orders (
+    id SERIAL,
+    client_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    amount NUMERIC(10,2)
+) PARTITION BY RANGE (order_date);
+
+-- Создаем секции
+CREATE TABLE orders_2024_q1 PARTITION OF orders
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE orders_2024_q2 PARTITION OF orders
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+CREATE TABLE orders_2024_q3 PARTITION OF orders
+    FOR VALUES FROM ('2024-07-01') TO ('2024-10-01');
+
+CREATE TABLE orders_2024_q4 PARTITION OF orders
+    FOR VALUES FROM ('2024-10-01') TO ('2025-01-01');
+
+-- Вставляем данные
+INSERT INTO orders (client_id, order_date, amount) VALUES 
+    (1, '2024-02-15', 100.50),
+    (2, '2024-05-20', 200.75),
+    (3, '2024-08-10', 150.25),
+    (4, '2024-11-05', 300.00);
+
+-- Проверяем
+SELECT tableoid::regclass AS partition, client_id, order_date, amount FROM orders;
+```
+
+![Скриншот]("img/92.png")
+```
+# Подключаемся к первой реплике
+docker exec -it postgresql-02 psql -U postgres -d test_db
+
+-- Проверяем структуру таблицы
+\d orders
+
+-- Проверяем данные
+SELECT tableoid::regclass AS partition, client_id, order_date, amount FROM orders;
+```
+![Скриншот]("img/93.png")
+![Скриншот]("img/94.png")
+
+- Секционирование есть 
+
+### Секционирование на логической реплике
+
+```
+
+-- Создали секционированную таблицу на мастере
+CREATE TABLE orders ( 
+    id SERIAL,
+    client_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    amount NUMERIC(10,2)
+) PARTITION BY RANGE (order_date);
+
+-- Создали секции
+CREATE TABLE orders_2024_q1 PARTITION OF orders
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE orders_2024_q2 PARTITION OF orders
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+-- Вставили данные
+INSERT INTO orders (client_id, order_date, amount) VALUES 
+    (1, '2024-02-15', 100.50),
+    (2, '2024-05-20', 200.75);
+
+    -- Публикация с publish_via_partition_root = off (по умолчанию)
+CREATE PUBLICATION pub_orders_off FOR TABLE orders;
+
+-- Публикация с publish_via_partition_root = on
+CREATE PUBLICATION pub_orders_on FOR TABLE orders 
+    WITH (publish_via_partition_root = on);
+```
+
+Структура на логической реплике
+```
+-- База postgres (такая же структура для pub_off)
+CREATE TABLE orders (
+    id SERIAL,
+    client_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    amount NUMERIC(10,2)
+) PARTITION BY RANGE (order_date);
+
+CREATE TABLE orders_2024_q1 PARTITION OF orders
+    FOR VALUES FROM ('2024-01-01') TO ('2024-04-01');
+
+CREATE TABLE orders_2024_q2 PARTITION OF orders
+    FOR VALUES FROM ('2024-04-01') TO ('2024-07-01');
+
+-- Обычная таблица для pub_on
+CREATE TABLE orders_flat (
+    id INT,
+    client_id INT NOT NULL,
+    order_date DATE NOT NULL,
+    amount NUMERIC(10,2)
+);
+```
+Подписки 
+```
+-- Подписка на pub_orders_off
+CREATE SUBSCRIPTION sub_orders_off 
+CONNECTION 'host=postgresql-01 port=5432 dbname=postgres user=postgres password=secretpass' 
+PUBLICATION pub_orders_off;
+
+-- Подписка на pub_orders_on
+CREATE SUBSCRIPTION sub_orders_on 
+CONNECTION 'host=postgresql-01 port=5432 dbname=postgres user=postgres password=secretpass' 
+PUBLICATION pub_orders_on;
+```
+
+Вставка на мастере
+```
+#  На мастере вставляем данные
+docker exec -it postgresql-01 psql -U postgres -d postgres
+sql
+INSERT INTO orders (client_id, order_date, amount) 
+VALUES (4, '2024-06-15', 300.00);
+
+INSERT INTO orders (client_id, order_date, amount) 
+VALUES (5, '2024-06-20', 400.00);
+```
+ На подписчике проверяем
+ ```
+docker exec -it logical_replica psql -U postgres -d postgres
+-- Проверяем в orders_flat (для pub_orders_on)
+SELECT * FROM orders_flat;
+ ```
+![Скриншот]("img/96.png")
+ ```
+-- Сравниваем с orders (для pub_orders_off)
+SELECT tableoid::regclass, * FROM orders;
+```
+
+![Скриншот]("img/94.png")
+
+## Шардирование
+
+### Создаем шарды на МАСТЕРЕ (postgresql-01)
+
+```bash
+# Подключаемся к мастеру (не к реплике!)
+docker exec -it postgresql-01 psql -U postgres
+```
+
+```sql
+-- Теперь создаем шарды
+CREATE DATABASE shard1;
+CREATE DATABASE shard2;
+
+-- Проверяем
+\l
+```
+
+### Создаем таблицы в шардах
+
+```sql
+-- Шард 1
+\c shard1
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    client_id INT NOT NULL,
+    amount NUMERIC(10,2)
+);
+
+INSERT INTO orders (client_id, amount) 
+SELECT generate_series(1, 500), random() * 1000;
+
+-- Проверяем
+SELECT COUNT(*) FROM orders; -- 500 записей
+```
+
+```sql
+-- Шард 2
+\c shard2
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    client_id INT NOT NULL,
+    amount NUMERIC(10,2)
+);
+
+INSERT INTO orders (client_id, amount) 
+SELECT generate_series(501, 1000), random() * 1000;
+
+-- Проверяем
+SELECT COUNT(*) FROM orders; -- 500 записей
+```
+
+### Настраиваем FDW на роутере
+
+```sql
+-- Создаем базу роутера
+CREATE DATABASE router;
+\c router
+
+-- Включаем FDW
+CREATE EXTENSION postgres_fdw;
+
+-- Подключаем шарды (они теперь на том же сервере)
+CREATE SERVER shard1_server FOREIGN DATA WRAPPER postgres_fdw 
+    OPTIONS (host 'localhost', port '5432', dbname 'shard1');
+
+CREATE SERVER shard2_server FOREIGN DATA WRAPPER postgres_fdw 
+    OPTIONS (host 'localhost', port '5432', dbname 'shard2');
+
+-- Маппинг
+CREATE USER MAPPING FOR postgres SERVER shard1_server OPTIONS (user 'postgres');
+CREATE USER MAPPING FOR postgres SERVER shard2_server OPTIONS (user 'postgres');
+
+-- Внешние таблицы
+CREATE FOREIGN TABLE ft_shard1 (id INT, client_id INT, amount NUMERIC) 
+    SERVER shard1_server OPTIONS (table_name 'orders');
+
+CREATE FOREIGN TABLE ft_shard2 (id INT, client_id INT, amount NUMERIC) 
+    SERVER shard2_server OPTIONS (table_name 'orders');
+```
+
+### Создаем представление
+
+```sql
+CREATE VIEW all_orders AS
+    SELECT * FROM ft_shard1
+    UNION ALL
+    SELECT * FROM ft_shard2;
+```
+
+### Смотрим планы запросов
+
+```sql
+-- Запрос на все данные
+EXPLAIN SELECT COUNT(*) FROM all_orders;
+```
+![Скриншот]("img/97.png")
+
+```sql
+-- Запрос на шард 1
+EXPLAIN SELECT * FROM all_orders WHERE client_id = 100;
+```
+![Скриншот]("img/98.png")
+```sql
+-- Запрос на шард 2  
+EXPLAIN SELECT * FROM all_orders WHERE client_id = 600;
+```
+![Скриншот]("img/99.png")
