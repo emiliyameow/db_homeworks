@@ -81,7 +81,7 @@ SELECT * FROM bakery_db.orders_range
 WHERE order_date BETWEEN '2024-05-01' AND '2024-05-31';
 ```
 
-![Скриншот](img/73.png") - одна партиция, seq scan, без индекса
+![Скриншот](img/73.png) - одна партиция, seq scan, без индекса
 Проверка на наличие данных в секциях
 
 ```
@@ -95,7 +95,7 @@ GROUP BY tableoid::regclass
 ORDER BY partition_name;
 ```
 
-![Скриншот]("img/74.png")
+![Скриншот](img/74.png)
 
 Запрос по диапазону (несколько секций)
 
@@ -105,7 +105,7 @@ SELECT * FROM bakery_db.orders_range
 WHERE order_date BETWEEN '2024-06-01' AND '2024-09-30';
 ```
 
-![Скриншот]("img/75.png")
+![Скриншот](img/75.png)
 Запрос без ключа (все секции)
 ```
 EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
@@ -113,8 +113,8 @@ SELECT * FROM bakery_db.orders_range
 WHERE client_id = 1;
 ```
 
-![Скриншот]("img/76 1.png")
-![Скриншот]("img/76 2.png")
+![Скриншот](img/76_1.png)
+![Скриншот](img/76_2.png)
 
 ### LIST Секционирование
 
@@ -127,7 +127,7 @@ FROM bakery_db.delivery_list
 GROUP BY tableoid::regclass, district
 ORDER BY partition_name;
 ```
-![Скриншот]("img/77.png")
+![Скриншот](img/77.png)
 Запрос с IN
 
 ```
@@ -135,7 +135,7 @@ EXPLAIN (ANALYZE, BUFFERS, VERBOSE)
 SELECT * FROM bakery_db.delivery_list
 WHERE district IN ('Центральный', 'Северный');
 ```
-![Скриншот]("img/79.png")
+![Скриншот](img/79.png)
 
 ### HASH Секционирование
 
@@ -156,7 +156,7 @@ SELECT * FROM bakery_db.clients_hash
 WHERE client_id = 15;
 ```
 
-![Скриншот]("img/78.png")
+![Скриншот](img/78.png)
 
 
 ### Секционирование на репликах 
@@ -201,7 +201,7 @@ INSERT INTO orders (client_id, order_date, amount) VALUES
 SELECT tableoid::regclass AS partition, client_id, order_date, amount FROM orders;
 ```
 
-![Скриншот]("img/92.png")
+![Скриншот](img/92.png)
 ```
 # Подключаемся к первой реплике
 docker exec -it postgresql-02 psql -U postgres -d test_db
@@ -212,8 +212,8 @@ docker exec -it postgresql-02 psql -U postgres -d test_db
 -- Проверяем данные
 SELECT tableoid::regclass AS partition, client_id, order_date, amount FROM orders;
 ```
-![Скриншот]("img/93.png")
-![Скриншот]("img/94.png")
+![Скриншот](img/93.png)
+![Скриншот](img/94.png)
 
 - Секционирование есть 
 
@@ -303,13 +303,13 @@ docker exec -it logical_replica psql -U postgres -d postgres
 -- Проверяем в orders_flat (для pub_orders_on)
 SELECT * FROM orders_flat;
  ```
-![Скриншот]("img/96.png")
+![Скриншот](img/96.png)
  ```
 -- Сравниваем с orders (для pub_orders_off)
 SELECT tableoid::regclass, * FROM orders;
 ```
 
-![Скриншот]("img/94.png")
+![Скриншот](img/94.png)
 
 ## Шардирование
 
@@ -407,15 +407,15 @@ CREATE VIEW all_orders AS
 -- Запрос на все данные
 EXPLAIN SELECT COUNT(*) FROM all_orders;
 ```
-![Скриншот]("img/97.png")
+![Скриншот](img/97.png)
 
 ```sql
 -- Запрос на шард 1
 EXPLAIN SELECT * FROM all_orders WHERE client_id = 100;
 ```
-![Скриншот]("img/98.png")
+![Скриншот](img/98.png)
 ```sql
 -- Запрос на шард 2  
 EXPLAIN SELECT * FROM all_orders WHERE client_id = 600;
 ```
-![Скриншот]("img/99.png")
+![Скриншот](img/99.png)

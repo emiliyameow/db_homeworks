@@ -134,7 +134,7 @@ while true; do
   sleep 0.1
 done
 
-![Скриншот](img/64.png")
+![Скриншот](img/64.png)
 
 ### Logical replication
 ```
@@ -235,9 +235,9 @@ PUBLICATION my_publication;
 SELECT * FROM pg_stat_subscription;
 \q
 ```
-![Скриншот](img/66.png")
-![Скриншот](img/67.png")
-![Скриншот](img/68.png")
+![Скриншот](img/66.png)
+![Скриншот](img/67.png)
+![Скриншот](img/68.png)
 
 Добавляем новый столбец на мастере
 ```
@@ -251,7 +251,7 @@ UPDATE users_pk SET phone = '+987654321' WHERE name = 'Bob';
 SELECT * FROM users_pk;
 \q
 ```
-![Скриншот](img/69.png")
+![Скриншот](img/69.png)
 
 Проверяем на логической реплике
 
@@ -265,10 +265,10 @@ docker exec -it logical_replica psql -U postgres -d logical_test
 SELECT * FROM users_pk;
 
 ```
-![Скриншот](img/70.png")
+![Скриншот](img/70.png)
 
 ### Проверка replication status
-![Скриншот](img/71.png")
+![Скриншот](img/71.png)
 
 docker exec -it postgresql-01 psql -U postgres -c "SELECT slot_name, slot_type, database, active, restart_lsn, confirmed_flush_lsn FROM pg_replication_slots;"
-![Скриншот](img/72.png")
+![Скриншот](img/72.png)
