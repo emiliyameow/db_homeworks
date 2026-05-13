@@ -8,7 +8,7 @@ public class Producer
     private readonly Random _random = new Random();
     private readonly string _workerId = "producer-1";
 
-    public async Task RunAsync(int taskCount = 1000, int delayMs = 100)
+    public async Task RunAsync(int taskCount = 500, int delayMs = 100)
     {
         using var conn = Database.GetConnection();
         await conn.OpenAsync();
