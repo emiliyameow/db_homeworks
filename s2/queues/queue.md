@@ -80,7 +80,7 @@ public class Producer
         // ... подключение, цикл, формирование payload
         using var tx = await conn.BeginTransactionAsync();
         // INSERT в tasks
-        // Фиктивная бизнес-логика: INSERT INTO order_log(...)
+        //
         // NOTIFY tasks_channel, 'new_task' (если используется notify)
         await tx.CommitAsync();
     }
@@ -136,13 +136,13 @@ _ = Task.Run(async () => {
 ![Скриншот](1.png)
 ![Скриншот](2.png)
 ---
-
+![Скриншот](3.png)
 ## Результаты тестирования
 
 ### Рост лага при увеличении нагрузки
 Ниже представлен график изменения лага очереди (секунды) во времени при интенсивности вставки 500 задач/сек.
 
-> ![График лага](BakeryTaskQueries/lags.png)  
+> ![](BakeryTaskQueries/lags.png)  
 
   
 - При старте лаг близок к 0.  

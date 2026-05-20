@@ -35,8 +35,8 @@ class Program
             
             var consumer1 = new Consumer("worker-1");
             var consumer2 = new Consumer("worker-2");
-            var task1 = consumer1.RunAsync(cts.Token);
-            var task2 = consumer2.RunAsync(cts.Token);
+            var task1 = consumer1.RunWithNotifyAsync(cts.Token);
+            var task2 = consumer2.RunWithNotifyAsync(cts.Token);
             Task.Run(async () => {
                 while (!cts.Token.IsCancellationRequested)
                 {
