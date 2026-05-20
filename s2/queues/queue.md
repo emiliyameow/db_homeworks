@@ -37,7 +37,6 @@ SELECT
 FROM bakery_db.tasks
 WHERE status = 0 AND scheduled_at <= NOW();
 ```
-![Скриншот](img/22.png)
 
 ### Измерение пропускной способности (tasks/sec)
 Количество успешно завершённых задач за последние 10 секунд:
@@ -49,7 +48,6 @@ WHERE status = 2
   AND updated_at > NOW() - INTERVAL '10 seconds';
 ```
 
-![Скриншот](img/22.png)
 
 ### Агрессивная настройка autovacuum для борьбы с bloat
 
