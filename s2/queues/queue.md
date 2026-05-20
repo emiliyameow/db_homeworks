@@ -37,6 +37,7 @@ SELECT
 FROM bakery_db.tasks
 WHERE status = 0 AND scheduled_at <= NOW();
 ```
+![Скриншот](img/22.png)
 
 ### Измерение пропускной способности (tasks/sec)
 Количество успешно завершённых задач за последние 10 секунд:
@@ -47,6 +48,8 @@ FROM bakery_db.tasks
 WHERE status = 2
   AND updated_at > NOW() - INTERVAL '10 seconds';
 ```
+
+![Скриншот](img/22.png)
 
 ### Агрессивная настройка autovacuum для борьбы с bloat
 
@@ -84,6 +87,7 @@ public class Producer
 }
 ```
 
+
 ### Consumer
 Две реализации:  
 - **`RunAsync`** – polling (проверка каждые 500 мс)  
@@ -114,6 +118,8 @@ private async Task RetryOrDLQAsync(long taskId, int currentAttempts, string erro
 }
 ```
 
+
+
 ### Мониторинг лага в реальном времени
 Фоновая задача, записывающая лаг и количество готовых задач в CSV-файл каждые 5 секунд.
 
@@ -123,13 +129,12 @@ _ = Task.Run(async () => {
     await writer.WriteLineAsync("timestamp_iso,unix_seconds,lag_seconds,ready_tasks_count");
     while (!cts.Token.IsCancellationRequested)
     {
-        // выполнение SQL-запроса на лаг
-        // запись в CSV и консоль
         await Task.Delay(5000);
     }
 });
 ```
-
+![Скриншот](1.png)
+![Скриншот](2.png)
 ---
 
 ## Результаты тестирования
