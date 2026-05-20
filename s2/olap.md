@@ -139,7 +139,7 @@ GROUP BY bg.baking_id, bg.name
 ORDER BY общая_выручка DESC
 LIMIT 5;
 ```
-![Скриншот](4.png)
+![Скриншот](queues/4.png)
 ### 2. Выручка по пекарням
 
 ```sql
@@ -153,7 +153,7 @@ JOIN olap.dim_bakery b ON fs.bakery_id = b.bakery_id
 GROUP BY b.bakery_id, b.name
 ORDER BY выручка DESC;
 ```
-![Скриншот](5.png)
+![Скриншот](queues/5.png)
 
 ### 3. Сравнение выручки и числа заказов по типу (самовывоз и доставка)
 
@@ -169,4 +169,4 @@ GROUP BY ot.type_name
 ORDER BY выручка DESC;
 ```
 
-![Скриншот](6.png)
+![Скриншот](queues/6.png)
